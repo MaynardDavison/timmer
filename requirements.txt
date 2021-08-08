@@ -1,0 +1,4 @@
+sphinx
+python-docx
+sphinx_rtd_theme
+pyinstaller
