@@ -1,7 +1,11 @@
 from datetime import datetime
 import tkinter
 
+<<<<<<< HEAD
 'test2'
+=======
+'test3'
+>>>>>>> parent of 5c7f0e9 ('v4')
 
 def gettime():
     """
