@@ -1,7 +1,7 @@
 from datetime import datetime
 import tkinter
 
-'test'
+'test2'
 
 def gettime():
     """
