@@ -14,9 +14,5 @@ Welcome to Time APP's documentation!
    API_documentation/TimeTableGenerator
 
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
