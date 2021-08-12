@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime
 import tkinter
 
@@ -8,15 +9,17 @@ def creat_window(timedict):
     Returns: None
 
     """
-
+--------------------------------------------------------
+#这一段也要不停刷新
     # 获取用于比较的时间表临时列表
     timelistForCompare = []
     for i in timedict:
         temp = datetime.strptime(i, "%H:%M:%S")
         timelistForCompare.append(temp)
-
-    #获取时间戳 与事件索引
+    # 获取时间戳 与事件索引
     timestr, timeindex = get_data(timelistForCompare)
+ -------------------------------------------------------
+
 
     #tk 初始化
     root = tkinter.Tk()
@@ -27,6 +30,7 @@ def creat_window(timedict):
     lb2.pack()
 
     def show():
+
         #显示
         lb.configure(text=timestr)
 
@@ -34,12 +38,10 @@ def creat_window(timedict):
             lb2.configure(text=list(timedict.values())[timeindex])#取values的第timeindex个的值,需转成list，dict不行
         else:
             lb2.configure(text="睡觉")
-        print(1)
-
 
     #设置5s延时
     root.after(5000, show)  # 每隔5获取值
-
+    # threading.Timer(1, show).start()
     #开始循环
     root.mainloop()
 
