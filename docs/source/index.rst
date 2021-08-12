@@ -14,8 +14,6 @@ Welcome to Time APP's documentation!
    API_documentation/TimeTableGenerator
 
 
-
-
 Indices and tables
 ==================
 
