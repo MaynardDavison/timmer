@@ -34,10 +34,11 @@ def creat_window(timedict):
             lb2.configure(text=list(timedict.values())[timeindex])#取values的第timeindex个的值,需转成list，dict不行
         else:
             lb2.configure(text="睡觉")
+        print(1)
 
 
     #设置5s延时
-    root.after(5000, show())  # 每隔5获取值
+    root.after(5000, show)  # 每隔5获取值
 
     #开始循环
     root.mainloop()
