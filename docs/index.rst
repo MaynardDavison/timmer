@@ -10,8 +10,8 @@ Welcome to Time APP's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   API_documentation/time_main
-   API_documentation/TimeTableGenerator
+   source/API_documentation/time_main
+   source/API_documentation/TimeTableGenerator
 
 
 Indices and tables
