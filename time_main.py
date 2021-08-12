@@ -1,9 +1,6 @@
 from datetime import datetime
 import tkinter
-
-
-'v1'
-
+#pull test
 
 def gettime():
     """
