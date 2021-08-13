@@ -3,20 +3,12 @@
 # @Time    : 2021/8/7 18:04
 # @Author  : hanyou
 # @Software: PyCharm
+"""
+生成表格
+"""
 
+from docx import Document
 
-def a(b,c):
-    """
-    test
+document = Document()
 
-    Args:
-        b(int): test2
-        c(float):test3
-
-    Returns: None
-
-    """
-    b=1
-    c=2
-
-
+table = document
