@@ -6,6 +6,7 @@
 """
 生成计时器
 """
+import time
 from datetime import datetime
 import tkinter
 
@@ -49,6 +50,7 @@ def _refresh():
     root.after(5000, _refresh)  # 不能嵌套多个def
 
 
+
 # 设置成全局参数，为了after能正常运行
 _Time_Dict = {'08:00:00': '早餐', '08:30:00': '口语', '09:00:00': '数学', '11:30:00': '午饭',
               '12:00:00': '单词', '12:30:00': '午觉', '13:30:00': '英语', '16:00:00': '力扣',
@@ -62,6 +64,8 @@ lb = tkinter.Label(root, text='', fg='black', font=("黑体", 80))
 lb2 = tkinter.Label(root, text='', fg='black', font=("黑体", 60))
 lb.pack()
 lb2.pack()
+
+
 
 
 def creat_window():
