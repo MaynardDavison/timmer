@@ -3,29 +3,16 @@
 # @Time    : 2021/8/12 21:36
 # @Author  : hanyou
 # @Software: PyCharm
+import os
 import time
 
-
-from clock import *
+from show_schedule import *
 import threading
 from TimeTableGenerator import timed_generation
 from apscheduler.schedulers.blocking import BlockingScheduler
 from multiprocessing import Process, Pool
-
-
-
-# 重构，自动添加参数，打卡模块，自动生成并发送邮件模块模块，自动检测并下载模块
-
-# 设置一个线程时间日期到了自动生成表格，还不能重复
-
-# 打卡设计
-
-# 消息发送，’新周报已生成+之前打卡情况‘
-
-# 未来考试后再改进自适应的列数目和项目
-
-
-# creat_window()
+from show_schedule import ShowSchedule
+from d_parameters_sec import update_d_param_process
 
 
 def thread2():
@@ -36,23 +23,31 @@ def thread2():
     print('test')
     schedudler.start()  # 开始任务
 
+def thread3():
+    s = read_pickle()
+    schedudler = BlockingScheduler()
+    for key, value in s.items():
+        schedudler.add_job(timed_generation, 'cron', day_of_week='0-6', hour=int(key[0:2]), minute=int(key[3:5]), second=00)
+
+
+
+def update():
+    while True:
+        os.system('python d_parameters_sec.py')
+        time.sleep(1)
 
 # t = threading.Thread(target=creat_window, name='thread1')#多线程
 
 
-
-
 if __name__ == '__main__':
-
     # 多进程
-    pool = Pool(processes=2)
-    pool.apply_async(creat_window)
+    pool = Pool(processes=3)
+    pool.apply_async(update_d_param_process())
+    pool.apply_async(ShowSchedule.creat_window)
     pool.apply_async(thread2)
     pool.close()
     pool.join()
 
-
 # 线程1，时钟
 # 线程2，打卡弹窗
 # 线程3，生成表格
-

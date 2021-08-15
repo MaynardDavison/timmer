@@ -10,13 +10,12 @@
 from docx import Document
 from docx.enum.section import WD_SECTION_START, WD_ORIENTATION
 import os
-import calendar
 import datetime
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.shared import RGBColor, Pt, Cm
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # 重点
-
+from table_parameters import t_param
 
 def creat_table():
     document = Document()
@@ -43,8 +42,12 @@ def creat_table():
 
     # 添加表头
     # document.add_heading('二零二一年八月上',1)#这里要改成自动生成，1代表标题1
+
+    date = datetime.date.today().strftime('%Y%m%d')  # 获取日期 y只有21
+    headline_str = get_headline_str(date)
+
     p = document.add_paragraph()
-    head_line = p.add_run('二零二一年八月上')
+    head_line = p.add_run('%s' % headline_str)
     head_line.font.size = Pt(22)  # 二号
     head_line.font.name = u'黑体'  # 单独设置headline的字体
     head_line._element.rPr.rFonts.set(qn('w:eastAsia'), u'黑体')
@@ -87,7 +90,7 @@ def creat_table():
         row_end.text = bak_list[i]
 
     # 添加表格日期
-    date = datetime.date.today().strftime('%Y%m%d')  # 获取日期 y只有21
+
     # day_count = calendar.monthrange(int(date[0:4]), int(date[4:6]))[1]  # 获取天数 [0]是周几
 
     # 检测是15号生成本月，30号生成下月 ，二月份从14号至28号（29号忽略）
@@ -97,11 +100,15 @@ def creat_table():
                 col_0 = table.cell(i + 1, 0).paragraphs[0]
                 col_0.text = date[4:6] + '.' + '%s' % (16 + i)
         elif int(date[6:8]) == 30:
-            for i in range(14):
-                col_0 = table.cell(i + 1, 0).paragraphs[0]
-                col_0.text = str(int(date[4:6]) + 1) + '.' + '%s' % (1 + i)
-        else:
-            pass
+            if int(date[4:6]) == 12:
+                for i in range(14):
+                    col_0 = table.cell(i + 1, 0).paragraphs[0]
+                    col_0.text = '1' + '.' + '%s' % (1 + i)
+            else:
+                for i in range(14):
+                    col_0 = table.cell(i + 1, 0).paragraphs[0]
+                    col_0.text = str(int(date[4:6]) + 1) + '.' + '%s' % (1 + i)
+
     else:
         if int(date[6:8]) == 14:
             for i in range(14):
@@ -111,13 +118,51 @@ def creat_table():
             for i in range(14):
                 col_0 = table.cell(i + 1, 0).paragraphs[0]
                 col_0.text = str(int(date[4:6]) + 1) + '.' + '%s' % (1 + i)
-        else:
-            pass
 
     # 生成文件
-    if os.path.exists('test.docx') is True:
-        os.remove('test.docx')
-    document.save('test.docx')
+    if os.path.exists('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str) is True:
+        os.remove('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str)
+    document.save('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str)
+
+
+def get_headline_str(date, record_mode=False):
+    num = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+
+    # 替换数字
+    cap_date = []
+
+    if int(date[6:8]) < 15:
+        for i in range(6):
+            cap_date.append(num[int(date[i])])
+        if record_mode:
+            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
+                           cap_date[5] + '月' + '上'
+        else:
+            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
+                           cap_date[5] + '月' + '下'
+
+    else:
+        if record_mode:
+            for i in range(6):
+                cap_date.append(num[int(date[i])])
+            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
+                           cap_date[5] + '月' + '下'
+        else:
+            for i in range(4):
+                cap_date.append(num[int(date[i])])
+            if int(date[4:6]) < 9:
+                cap_date.append('零')
+                cap_date.append(num[int(date[5]) + 1])
+            elif int(date[4:6]) < 12:
+                cap_date.append('一')
+                cap_date.append(num[int(date[5]) + 1])
+            else:
+                cap_date.append('零')
+                cap_date.append('一')
+            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
+                       cap_date[5] + '月' + '上'
+
+    return headline_str
 
 
 # 定时生成函数
@@ -130,3 +175,7 @@ def timed_generation():
     else:
         if int(date[6:8]) == 14 or int(date[6:8]) == 28:
             creat_table()
+
+
+if __name__ == '__main__':
+    timed_generation()
