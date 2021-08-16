@@ -23,7 +23,6 @@ def show_schedule():
             d_param = json.load(f)
         lb.configure(text=d_param['current_time_str'])  # 时间
         lb2.configure(text=d_param['current_thing_str'])  # 事件
-
         root.after(5000, refresh)  # 不能有参数传入
 
     refresh()

@@ -56,8 +56,6 @@ d_param['current_thing_time']=s_param['schedule_time_list'][d_param['current_tim
 # d_param['current_time_str_for_compare'] = datetime.datetime.strptime(d_param['current_time_str'], "%H:%M:%S")
 
 
-
-
 # 参数封闭，需要中间文件传递参数
 with open('json_files/d_parameters_sec.json','w') as f:
     json.dump(d_param,f)
