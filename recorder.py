@@ -6,112 +6,82 @@
 """
 用于实现打卡功能
 """
+# 新事项出现时，其后5分钟（倒计时）弹出旧事项打卡选项，休息日统计分数
 
-# 每个事件的前五分钟为打卡时间 or 晚上23点前最后一次打卡显示所有内容，对错过的打卡进行修改并评分
-import datetime
+
+import json
 from tkinter import *
 
+from apscheduler.schedulers.blocking import BlockingScheduler
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-
-from TimeTableGenerator import get_headline_str
-from show_schedule import Clocker
-
 import tkinter
 import tkinter.messagebox
-
 from docx import Document
 
+from static_parameters import s_param
 
-class Recorder:
-    def __init__(self):
-        # self.__date = datetime.date.today().strftime('%Y%m%d')
-        self.__date = '20210816'
-        # 创建主窗口
-        self.root = tkinter.Tk()
-        # 整型对象
-        self.var = tkinter.IntVar()
+with open('json_files/d_parameters_day.json', 'r') as f:
+    d_h_param = json.load(f)
 
-        _, _,self.time_index=Clocker.get_clock_data()
+with open('json_files/d_parameters_sec.json', 'r') as f:
+    d_param = json.load(f)
 
-    def get_result(self):
+# 判读是否弹出窗口
+def record_trigger():
+    with open('json_files/d_parameters_sec.json', 'r') as f:
+        d_param = json.load(f)
+    if not (d_param['current_time_index'] == 0 and (
+            d_h_param['day'] == s_param['genTable_next_month_start_day'] or d_h_param['day'] == s_param[
+        'genTable_current_month_start_day'])):
 
-        num = self.var.get()
+        #安装时间表定时执行
+        schedudler = BlockingScheduler()
+        for i in range(s_param['things_len']):#只执行一次
+            schedudler.add_job(window_pop, 'date', run_date=d_h_param['current_date_str_2']+' '+ s_param['schedule_time_list'] [i])
+            # if i== s_param['things_len']-1:
+            #     schedudler.shutdown(wait=False)#False立刻中断
+        schedudler.start()
+
+def window_pop():
+    root = tkinter.Tk()
+    var = tkinter.IntVar()
+    # 按时间表弹出窗口
+    lb = tkinter.Label(root, text='%s' % d_param['last_thing_str'], fg='black', font=("黑体", 50))
+    lb.pack()
+    # 值为1
+    choose_yes = tkinter.Radiobutton(root, text="yes", variable=var, value=s_param['task_complete_value'],
+                                     font=("cambria", 20))
+    choose_yes.pack()
+    # 值为2
+    choose_no = tkinter.Radiobutton(root, text="no", variable=var, value=s_param['task_not_complete_value'],
+                                    font=("cambria", 20))
+    choose_no.pack()
+
+    def write_result():
+        num = var.get()
         # 如果值为1,写入
         # 获取当前单元格位置
-
-        headline_str = get_headline_str(self.__date,record_mode=True)
-        f = Document('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str)
-        table = f.tables[0]
-        # 获取哪一天，哪一个项目的id
-        # 读取第一列的数字与self.__date比较
-        x = None
-        for i in range(14):
-            if int(table.cell(i + 1, 0).text[-2:]) == int(self.__date[6:8]):
-                x = i + 1  # 输出哪一行
-        if x == -1:
-            ex = Exception("x没有被赋值")
-            raise ex
-        if self.time_index==0:
-            y=12#-1不行
-            x=x-1
-            if x == 0:#不在这张表格内
-                return None#直接中断
-        else:
-            y = self.time_index-1
-
-        if num == 0:
-            table.cell(x, y).paragraphs[0].text = '✔'
-            table.cell(x, y).paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            f.save('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str)#需要保存！
-
-        else:
-            # 暂时不打×
-            pass
+        if num == s_param['task_complete_value']:
+            f = Document(s_param['file_path'] + '%s' % d_h_param['current_headline_str'] + s_param['file_tpye'])
+            table = f.tables[0]
+            data_list = [int(table.cell(x + 1, 0).text[-2:]) for x in range(s_param['days_len'])]
+            if d_param['last_time_index'] == s_param['things_len']:  # 最后一项
+                write_row = data_list.index(d_h_param['day'])
+            else:
+                write_row = data_list.index(d_h_param['day']) + 1
+            table.cell(write_row, d_param['last_time_index'] + 1).paragraphs[0].text = '✔'
+            table.cell(write_row, d_param['last_time_index'] + 1).paragraphs[
+                0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            f.save(s_param['file_path'] + '%s' % d_h_param['current_headline_str'] + s_param['file_tpye'])  # 需要保存！
 
         # 关闭窗口
-        self.root.quit()
+        root.quit()
 
-    def windows_set(self):
-        Time_Dict = ['早餐', '口语', '数学', '单词', '午休', '英语', '力扣', '公考', '健身', '钢琴', '阅读', '按时睡觉']
-        if self.time_index-1 >=0:
+    # 按钮
+    submit = Button(root, text="Submit", command=write_result)
+    submit.pack()
+    root.mainloop()
 
-            text_str=Time_Dict[self.time_index-1]
-            print(self.time_index)
-        else:
-            text_str = Time_Dict[- 1]
-
-        lb = tkinter.Label(self.root, text='%s' % text_str, fg='black', font=("黑体", 50))
-        lb.pack()
-        # 值为1
-        choose_yes = tkinter.Radiobutton(self.root, text="yes", variable=self.var, value=0, font=("cambria", 20))
-        choose_yes.pack()
-        # 值为2
-        choose_no = tkinter.Radiobutton(self.root, text="no", variable=self.var, value=1, font=("cambria", 20))
-        choose_no.pack()
-        # 按钮
-        submit = Button(self.root, text="Submit", command=self.get_result)
-        submit.pack()
-        self.root.mainloop()
-
-    def statistics_count(self):
-        for i in range(14):
-            for j in range(12):
-
-
-    def run_judge(self):
-        #某些时段不执行
-        if int(self.__date[4:6]) != 2:
-            if int(self.__date[6:8]) == 15 or int(self.__date[6:8]) == 30:
-                pass  # 不执行
-            else:
-                self.windows_set()
-        else:
-            if int(self.__date[6:8]) == 14 or int(self.__date[6:8]) == 28 or int(self.__date[6:8]) == 29:
-                pass
-            else:
-                self.windows_set()
 
 if __name__ == '__main__':
-    #线程里面每格时间前五分钟执行，超过五分钟后kill进程
-    a=Recorder()
-    a.run_judge()
+    pass

@@ -4,50 +4,85 @@
 # @Author  : hanyou
 # @Software: PyCharm
 import os
-import time
 
+from recorder import record_trigger
 from show_schedule import *
 import threading
-from TimeTableGenerator import timed_generation
 from apscheduler.schedulers.blocking import BlockingScheduler
 from multiprocessing import Process, Pool
-from show_schedule import ShowSchedule
-from d_parameters_sec import update_d_param_process
 
 
-def thread2():
-    # 定时任务
+
+
+def run_show():
+    with open('json_files/d_parameters_day.json', 'r') as f:
+        d_h_param = json.load(f)
+    if d_h_param['rest_day_flag']==1:
+        show_schedule()
+def run_record():
+    with open('json_files/d_parameters_day.json', 'r') as f:
+        d_h_param = json.load(f)
+    if d_h_param['rest_day_flag']==1:
+        record_trigger()
+
+def update_sec():
+    thread_lock.acquire()
+    os.system('python d_parameters_sec.py')
+    thread_lock.release()
+    print('update_sec')
+
+
+def update_day():
+    thread_lock.acquire()
+    os.system('python d_parameters_day.py')
+    thread_lock.release()
+    print('update_day')
+
+
+
+def run_update():
+    #首先定时执行 更新sec day操作
+    update_sec()#启动时先执行一次
+    update_day()
     schedudler = BlockingScheduler()
-    # 定时每天 20:00:00秒执行任务
-    schedudler.add_job(timed_generation, 'cron', day_of_week='0-6', hour=20, minute=00, second=00)  # cron应该时触发器的名称
-    print('test')
-    schedudler.start()  # 开始任务
+    schedudler.add_job(update_sec, 'interval',seconds=5)
+    schedudler.add_job(update_day,'cron', day_of_week='*', hour=7, minute='50', second='00') #每天执行一次
 
-def thread3():
-    s = read_pickle()
-    schedudler = BlockingScheduler()
-    for key, value in s.items():
-        schedudler.add_job(timed_generation, 'cron', day_of_week='0-6', hour=int(key[0:2]), minute=int(key[3:5]), second=00)
-
-
-
-def update():
-    while True:
-        os.system('python d_parameters_sec.py')
-        time.sleep(1)
-
-# t = threading.Thread(target=creat_window, name='thread1')#多线程
+    schedudler.start()
+    # t1 = threading.Thread(target=judge_date_to_run, name='show')
+    # t1.start()
 
 
 if __name__ == '__main__':
-    # 多进程
+    thread_lock = threading.Lock()
     pool = Pool(processes=3)
-    pool.apply_async(update_d_param_process())
-    pool.apply_async(ShowSchedule.creat_window)
-    pool.apply_async(thread2)
+    pool.apply_async(run_update)
+    pool.apply_async(run_show)
+    pool.apply_async(run_record)
     pool.close()
     pool.join()
+    #
+    # # 一个读一个写没问题，但是容易间隔不均匀
+    # # t1 =threading.Timer(5,update)#只是延时执行
+    # t1 = threading.Thread(target=update, name='update_param')
+    # t1.start()
+    #
+    # t2 = threading.Thread(target=judge_date_to_run, name='show')
+    # t2.start()
+    #
+    # with open('json_files/d_parameters_day.json', 'r') as f:
+    #     d_h_param = json.load(f)
+    # if d_h_param['rest_day_flag'] == 1:
+    #     record_trigger()
+    #
+    #
+    # #设置成定时执行即可
+    # os.system('python d_parameters_day.py')
+    # with open('json_files/d_parameters_day.json', 'r') as f:
+    #     d_h_param = json.load(f)
+    # if d_h_param['genTable_switch']:
+    #     static_score()
+    #     creat_table()
 
-# 线程1，时钟
-# 线程2，打卡弹窗
-# 线程3，生成表格
+
+

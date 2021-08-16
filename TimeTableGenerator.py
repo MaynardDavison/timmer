@@ -4,22 +4,25 @@
 # @Author  : hanyou
 # @Software: PyCharm
 """
-生成表格
+用于两个时段生成表格
 """
+import json
 
 from docx import Document
 from docx.enum.section import WD_SECTION_START, WD_ORIENTATION
-import os
-import datetime
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.shared import RGBColor, Pt, Cm
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT  # 重点
-from table_parameters import t_param
+
+from static_parameters import s_param
+
+with open('json_files/d_parameters_day.json', 'r') as f:
+    d_h_param = json.load(f)
+
 
 def creat_table():
     document = Document()
-
     # 转横向
     section = document.sections[0]  # 第一页设置横向
     # section = document.add_section(start_type=WD_SECTION_START.CONTINUOUS) # 添加横向页的连续节，多加一页
@@ -41,13 +44,9 @@ def creat_table():
     document.styles['Normal'].font.color.rgb = RGBColor(0, 0, 0)
 
     # 添加表头
-    # document.add_heading('二零二一年八月上',1)#这里要改成自动生成，1代表标题1
-
-    date = datetime.date.today().strftime('%Y%m%d')  # 获取日期 y只有21
-    headline_str = get_headline_str(date)
-
+    genTable_headline_str = d_h_param['genTable_headline_str']
     p = document.add_paragraph()
-    head_line = p.add_run('%s' % headline_str)
+    head_line = p.add_run('%s' % genTable_headline_str)
     head_line.font.size = Pt(22)  # 二号
     head_line.font.name = u'黑体'  # 单独设置headline的字体
     head_line._element.rPr.rFonts.set(qn('w:eastAsia'), u'黑体')
@@ -55,127 +54,83 @@ def creat_table():
     head_line.bold = True  # 字体加粗
 
     # 添加表格
-    table = document.add_table(rows=16, cols=13, style='Table Grid')  # 16行13列,正常样式
+    table = document.add_table(rows=s_param['table_row_len'], cols=s_param['table_col_len'],
+                               style='Table Grid')  # 16行13列,正常样式
     # table.cell(0, 0).merge(table.cell(2, 2))  可以合并单元格
 
     # 设置列宽
-    cols_width_list = [2.13, 1.92, 1.92, 1.92, 1.92, 1.92, 1.92, 1.92, 1.92, 1.92, 1.92, 1.92, 2.13]
-    for i in range(13):
+    cols_width_list = s_param['col_width_list']
+    for i in range(s_param['table_col_len']):
         table.cell(0, i).width = Cm(cols_width_list[i])
 
     # 设置行高
-    for i in range(14):  # 最后一行与第一行单独设置16-2
+    for i in range(s_param['table_row_len'] - 2):  # 最后一行与第一行单独设置16-2
         table.rows[i + 1].height = Cm(0.9)
     table.rows[0].height = Cm(1)
-    table.rows[15].height = Cm(2.82)
+    table.rows[s_param['table_row_len']-1].height = Cm(2.82)#row 10是第11行了要减1
 
     # 垂直居中对其
     # table.alignment = WD_TABLE_ALIGNMENT.CENTER#这个是单元格的对齐，不是内容的对其
-    for i in range(16):
-        for j in range(13):
+    for i in range(s_param['table_row_len']):
+        for j in range(s_param['table_col_len']):
             table.cell(i, j).paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # 这里全局设置居中后后面就不用设置了
             table.cell(i, j).vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
 
     # 添加事项
-    things_list = ['日期\\项目', '早餐', '口语', '数学', '单词', '午休', '英语', '力扣', '公考', '健身', '钢琴', '阅读', '按时睡觉']
-    for i in range(13):
+    table_col_list = s_param['table_col_list']
+    for i in range(s_param['table_col_len']):
         row_head = table.rows[0].cells[i].paragraphs[0]
-        row_head.text = things_list[i]
+        row_head.text = table_col_list[i]
         # p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  #单独设置居中的时候可以这样做
 
     # 添加备注
-    bak_list = ['备注', '8点', '流利说', '考研数学', '', '', 'anki复习', 'c&python', '党，写作，刷题', '两天一轮', '', 'caculus', '23:00']
-    for i in range(13):
+    bak_list = s_param['bak_list']
+    for i in range(s_param['table_col_len']):
         row_end = table.rows[-1].cells[i].paragraphs[0]
         row_end.text = bak_list[i]
 
     # 添加表格日期
-
-    # day_count = calendar.monthrange(int(date[0:4]), int(date[4:6]))[1]  # 获取天数 [0]是周几
-
-    # 检测是15号生成本月，30号生成下月 ，二月份从14号至28号（29号忽略）
-    if int(date[4:6]) != 2:  # 不是二月份
-        if int(date[6:8]) == 15:
-            for i in range(14):
-                col_0 = table.cell(i + 1, 0).paragraphs[0]
-                col_0.text = date[4:6] + '.' + '%s' % (16 + i)
-        elif int(date[6:8]) == 30:
-            if int(date[4:6]) == 12:
-                for i in range(14):
-                    col_0 = table.cell(i + 1, 0).paragraphs[0]
-                    col_0.text = '1' + '.' + '%s' % (1 + i)
-            else:
-                for i in range(14):
-                    col_0 = table.cell(i + 1, 0).paragraphs[0]
-                    col_0.text = str(int(date[4:6]) + 1) + '.' + '%s' % (1 + i)
-
+    # 检测是15号生成本月，月底前第三天生成下月
+    # 月底时间28 28-15=13,需要显示14天则14-13=1天划掉
+    if d_h_param['genTable_switch'] == s_param['gentable_current_mode_num'] or \
+            d_h_param['genTable_switch'] == s_param['gentable_repaire_later_mode_num']:
+        remain_days_count = d_h_param['normal_genTable_later_day'] - d_h_param['normal_genTable_early_day']
+        blank_days_count = s_param['days_len'] - remain_days_count  # 最少也会空一天
+        for i in range(remain_days_count):  # 正
+            col_0 = table.cell(i + 1, 0).paragraphs[0]
+            col_0.text = str(d_h_param['month']) + '.' + '%s' % (s_param['genTable_current_month_start_day'] + i)
+        for i in range(blank_days_count):  # 反
+            #这里是一整行添加 ，倒过来的一定要减 2！！！！！
+            for j in range (s_param['table_col_len']):
+                col_0 = table.cell(-i - 2,j).paragraphs[0]
+                col_0.text = '\\'
+    elif d_h_param['genTable_switch'] == s_param['gentable_next_mode_num']:
+        for i in range(s_param['days_len']):
+            col_0 = table.cell(i + 1, 0).paragraphs[0]
+            col_0.text = str(d_h_param['next_month']) + '.' + '%s' % (s_param['genTable_next_month_start_day'] + i)
+    elif d_h_param['genTable_switch'] == s_param['gentable_repaire_early_mode_num']:
+        for i in range(s_param['days_len']):
+            col_0 = table.cell(i + 1, 0).paragraphs[0]
+            col_0.text = str(d_h_param['month'] )+ '.' + '%s' % (s_param['genTable_next_month_start_day'] + i)
     else:
-        if int(date[6:8]) == 14:
-            for i in range(14):
-                col_0 = table.cell(i + 1, 0).paragraphs[0]
-                col_0.text = date[4:6] + '.' + '%s' % (15 + i)
-        elif int(date[6:8]) == 28:
-            for i in range(14):
-                col_0 = table.cell(i + 1, 0).paragraphs[0]
-                col_0.text = str(int(date[4:6]) + 1) + '.' + '%s' % (1 + i)
+        ex = Exception('No other modes now!')
+        raise ex
 
-    # 生成文件
-    if os.path.exists('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str) is True:
-        os.remove('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str)
-    document.save('C:/Users/hy/Desktop/打卡表格/%s.docx' % headline_str)
+    document.save(s_param['file_path'] + '%s' % d_h_param['genTable_headline_str'] + s_param['file_tpye'])
 
-
-def get_headline_str(date, record_mode=False):
-    num = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九']
-
-    # 替换数字
-    cap_date = []
-
-    if int(date[6:8]) < 15:
-        for i in range(6):
-            cap_date.append(num[int(date[i])])
-        if record_mode:
-            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
-                           cap_date[5] + '月' + '上'
-        else:
-            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
-                           cap_date[5] + '月' + '下'
-
-    else:
-        if record_mode:
-            for i in range(6):
-                cap_date.append(num[int(date[i])])
-            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
-                           cap_date[5] + '月' + '下'
-        else:
-            for i in range(4):
-                cap_date.append(num[int(date[i])])
-            if int(date[4:6]) < 9:
-                cap_date.append('零')
-                cap_date.append(num[int(date[5]) + 1])
-            elif int(date[4:6]) < 12:
-                cap_date.append('一')
-                cap_date.append(num[int(date[5]) + 1])
-            else:
-                cap_date.append('零')
-                cap_date.append('一')
-            headline_str = cap_date[0] + cap_date[1] + cap_date[2] + cap_date[3] + '年' + cap_date[4] + \
-                       cap_date[5] + '月' + '上'
-
-    return headline_str
-
-
-# 定时生成函数
-def timed_generation():
-    # 检测时间日期
-    date = datetime.date.today().strftime('%Y%m%d')
-    if int(date[4:6]) != 2:
-        if int(date[6:8]) == 15 or int(date[6:8]) == 30:
-            creat_table()
-    else:
-        if int(date[6:8]) == 14 or int(date[6:8]) == 28:
-            creat_table()
+def static_score():
+    #再最后一项填入得分
+    f = Document(s_param['file_path'] + '%s' % d_h_param['current_headline_str'] + s_param['file_tpye'])
+    table = f.tables[0]
+    score=0
+    for i in range(s_param['days_len']):
+        for j in range(s_param['things_len']):
+            if table.cell(i+1,j+1).text == '✔':
+                score+=1
+    table.cell(s_param['days_len'],s_param['things_len']).paragraphs[0].text = score
+    table.cell(s_param['days_len'],s_param['things_len']).paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+    f.save(s_param['file_path'] + '%s' % d_h_param['current_headline_str'] + s_param['file_tpye'])  # 需要保存！
 
 
 if __name__ == '__main__':
-    timed_generation()
+    pass
